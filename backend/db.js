@@ -24,6 +24,29 @@ db.exec(`
     description TEXT,
     created_at TEXT DEFAULT (datetime('now'))
   )
+
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT,
+    name TEXT,
+    provider TEXT NOT NULL DEFAULT 'local',
+    google_id TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS chat_sessions (
+    id TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    title TEXT NOT NULL DEFAULT 'New conversation',
+    messages TEXT NOT NULL DEFAULT '[]',
+    mode TEXT DEFAULT 'chat',
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
 `);
+
+
 
 module.exports = db;
