@@ -6,6 +6,9 @@ const multer = require("multer");
 const grantsRouter = require("./routes/grants");
 const grantsBotRouter = require("./routes/grantsBot");
 const exportRouter = require("./routes/export");
+const { router: authRouter } = require("./routes/auth");
+const sessionsRouter = require("./routes/sessions");
+
 
 const {
   addDocument,
@@ -19,12 +22,15 @@ app.use(cors());
 app.use(express.json());
 app.use("/api/grants", grantsRouter);
 app.use("/api/export", exportRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/sessions", sessionsRouter);
 
 const { signToken, requireAdmin } = require("./auth");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const upload = multer({ storage: multer.memoryStorage() });
 app.use("/api/grants-chat", grantsBotRouter(genAI));
+
 
 const PROPOSAL_SYSTEM_PROMPT = `You are a Research Proposal Assistant specializing in GNSS and satellite navigation research. You help users draft and structure strong research proposals.
 

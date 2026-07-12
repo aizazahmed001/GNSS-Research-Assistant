@@ -23,7 +23,7 @@ db.exec(`
     grant_category TEXT,
     description TEXT,
     created_at TEXT DEFAULT (datetime('now'))
-  )
+  );
 
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,7 +46,5 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
 `);
-
-
 
 module.exports = db;
