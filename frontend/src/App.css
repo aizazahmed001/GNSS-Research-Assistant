@@ -1,0 +1,713 @@
+:root {
+  --bg: #0a0e17;
+  --panel: #10182b;
+  --panel-alt: #161f38;
+  --border: rgba(255, 255, 255, 0.08);
+  --accent: #4ade80;
+  --accent-dim: rgba(74, 222, 128, 0.15);
+  --amber: #f2b84b;
+  --text: #e7ecf5;
+  --text-dim: #7c8aa8;
+  --danger: #f87171;
+  --sidebar-w: 240px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(74, 222, 128, 0.04), transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(242, 184, 75, 0.03), transparent 40%);
+}
+
+/* ── Page layout ───────────────────────────────────────────────────────────── */
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: "Inter", system-ui, sans-serif;
+  padding: 20px;
+}
+
+/* ── Page heading ──────────────────────────────────────────────────────────── */
+.page-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.page-heading-icon {
+  font-size: 38px;
+  color: var(--accent);
+  line-height: 1;
+  filter: drop-shadow(0 0 10px rgba(74, 222, 128, 0.45));
+  user-select: none;
+}
+
+.page-title {
+  font-family: "Space Mono", monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 4px;
+  letter-spacing: 0.04em;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+/* ── Main layout (sidebar + chat) ──────────────────────────────────────────── */
+.layout {
+  display: flex;
+  gap: 16px;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  height: 640px; /* fixed height so children can scroll internally instead of growing */
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────────────── */
+.sidebar {
+  width: 240px;
+  height: 100%; /* fill the fixed layout height, don't grow past it */
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.25s ease;
+}
+
+.sidebar-open  { width: var(--sidebar-w); }
+.sidebar-closed { width: 56px; }
+
+.sidebar-header {
+   display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-alt);
+}
+
+.new-chat-btn {
+   flex: 1;
+  background: linear-gradient(135deg, var(--accent), #3bc470);
+  color: #06170d;
+  border: none;
+  padding: 9px 12px;
+  border-radius: 9px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.new-chat-btn:hover {  
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(74, 222, 128, 0.25);
+}
+
+.sidebar-closed .new-chat-btn { display: none; }
+
+.sidebar-toggle {
+   background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 12px;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-toggle:hover { 
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.session-list {
+  flex: 1;
+  min-height: 0; /* critical: without this, flex children won't shrink below content size */
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.no-sessions {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
+  margin-top: 16px;
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s;
+}
+.session-item:hover {   
+  background: rgba(255, 255, 255, 0.04);
+ }
+.session-active    { background: var(--accent-dim); }
+
+.session-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.session-title {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.no-sessions {
+  color: var(--text-dim);
+  font-size: 12px;
+  text-align: center;
+  padding: 30px 12px;
+  font-family: "Space Mono", monospace;
+}
+
+.session-time {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: "Space Mono", monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-delete {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+  flex-shrink: 0;
+  padding: 2px 4px;
+}
+
+.session-active .session-title {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.session-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  flex-shrink: 0;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.session-active .session-dot {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+.session-item:hover .session-delete { opacity: 1; }
+.session-delete:hover {
+  color: #f66;
+}
+
+.session-list::-webkit-scrollbar {
+  width: 5px;
+}
+.session-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.session-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+/* ── Chat window ───────────────────────────────────────────────────────────── */
+.chat-window {
+  width: 820px;
+  height: 100%; /* match sidebar height exactly */
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  background: var(--panel-alt);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.header-left { display: flex; align-items: center; gap: 8px; }
+
+.header-title {
+  font-family: "Space Mono", monospace;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+
+.header-sub {
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.layout {
+  display: flex;
+  gap: 16px;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── Mode bar ──────────────────────────────────────────────────────────────── */
+.mode-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 18px; 
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-alt);
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mode-bar::-webkit-scrollbar {
+  height: 6px;
+}
+.mode-bar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.mode-bar::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+.mode-bar::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-dim);
+}
+
+.mode-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: "Space Mono", monospace;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mode-btn:hover {
+  background: rgba(255,255,255,0.05);
+  color: var(--text);
+}
+.mode-active {
+  background: var(--accent-dim) !important;
+  border-color: rgba(74, 222, 128, 0.3) !important;
+  color: var(--accent) !important;
+}
+
+.mode-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ── Mode badge on bot messages ────────────────────────────────────────────── */
+.mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-family: "Space Mono", monospace;
+  color: var(--accent);
+  background: var(--accent-dim);
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-bottom: 5px;
+  margin-left: 2px;
+  align-self: flex-start;
+}
+
+/* ── Empty state icon ──────────────────────────────────────────────────────── */
+.empty-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--accent);
+  margin-bottom: 10px;
+  opacity: 0.85;
+}
+
+/* ── Messages ──────────────────────────────────────────────────────────────── */
+.message-area {
+  flex: 1;
+  padding: 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty-state {
+  margin: auto;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.empty-title {
+  font-family: "Space Mono", monospace;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.empty-sub { font-size: 12px; }
+
+.message-col {
+  display: flex;
+  flex-direction: column;
+  max-width: 78%;
+  align-items: flex-start;
+}
+
+.row-user .message-col {
+  align-items: flex-end;
+}
+
+.message-col .bubble {
+  max-width: 100%; /* the column now controls width, bubble just fills it */
+}
+
+.message-row { display: flex; width: 100%; }
+.row-user { justify-content: flex-end; }
+.row-bot  { justify-content: flex-start; }
+
+.bubble {
+  max-width: 78%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.bubble-user {
+  background: var(--accent);
+  color: #06170d;
+  border-bottom-right-radius: 4px;
+  font-weight: 500;
+}
+
+.bubble-bot {
+  background: var(--panel-alt);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+
+/* File badge inside user bubble */
+.file-badge {
+  display: inline-block;
+  background: rgba(0,0,0,0.2);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 12px;
+  margin-bottom: 4px;
+  font-family: "Space Mono", monospace;
+}
+
+/* Markdown resets */
+.bubble-bot p { margin: 0 0 8px 0; }
+.bubble-bot p:last-child { margin-bottom: 0; }
+.bubble-bot strong { color: var(--amber); font-weight: 600; }
+.bubble-bot em { color: var(--text); }
+.bubble-bot ul, .bubble-bot ol { margin: 6px 0; padding-left: 20px; }
+.bubble-bot li { margin: 4px 0; }
+.bubble-bot h1, .bubble-bot h2, .bubble-bot h3 {
+  font-family: "Space Mono", monospace;
+  color: var(--accent);
+  font-size: 13px;
+  margin: 10px 0 6px 0;
+  letter-spacing: 0.03em;
+}
+.bubble-bot code {
+  background: rgba(255,255,255,0.08);
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: "Space Mono", monospace;
+  font-size: 12px;
+  color: var(--amber);
+}
+.bubble-bot hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 10px 0;
+}
+
+/* Signal-lock loading */
+.signal-lock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+}
+.ping-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+.ping-ring {
+  position: absolute;
+  left: 14px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  animation: ping 1.4s ease-out infinite;
+}
+@keyframes ping {
+  0%   { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(3.5); opacity: 0; }
+}
+.signal-text {
+  font-family: "Space Mono", monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* ── System message (upload confirmations) ─────────────────────────────────── */
+.row-system { justify-content: center; }
+
+.bubble-system {
+  background: rgba(74, 222, 128, 0.07);
+  border: 1px dashed rgba(74, 222, 128, 0.3);
+  color: var(--text-dim);
+  font-size: 13px;
+  border-radius: 10px;
+  max-width: 90%;
+  text-align: center;
+  padding: 8px 14px;
+}
+.bubble-system p { margin: 0; }
+.bubble-system strong { color: var(--accent); }
+
+/* ── Uploaded docs strip ───────────────────────────────────────────────────── */
+.docs-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--panel-alt);
+}
+
+.doc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(242, 184, 75, 0.1);
+  border: 1px solid rgba(242, 184, 75, 0.25);
+  color: var(--amber);
+  font-size: 12px;
+  font-family: "Space Mono", monospace;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.doc-chunks {
+  font-size: 10px;
+  color: var(--text-dim);
+  background: rgba(255,255,255,0.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.doc-remove {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+}
+.doc-remove:hover { color: var(--danger); }
+
+.uploading-tag {
+  color: var(--text-dim);
+  border-color: var(--border);
+  background: rgba(255,255,255,0.04);
+}
+
+/* ── File preview bar ──────────────────────────────────────────────────────── */
+.file-preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--panel-alt);
+  gap: 10px;
+}
+
+.file-preview-name {
+  font-size: 12px;
+  color: var(--amber);
+  font-family: "Space Mono", monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-remove-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.file-remove-btn:hover { color: var(--danger); }
+
+/* ── Input row ─────────────────────────────────────────────────────────────── */
+.input-row {
+  display: flex;
+  padding: 14px;
+  border-top: 1px solid var(--border);
+  gap: 8px;
+  background: var(--panel-alt);
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.attach-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-dim);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s;
+}
+.attach-btn:hover { border-color: var(--amber); color: var(--amber); }
+
+.text-input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  outline: none;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Inter", sans-serif;
+}
+.text-input::placeholder { color: var(--text-dim); }
+.text-input:focus { border-color: var(--accent); }
+
+.send-btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent);
+  color: #06170d;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: "Inter", sans-serif;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.send-btn:hover { opacity: 0.85; }
+
+/* ── Scrollbar styling ─────────────────────────────────────────────────────── */
+.message-area::-webkit-scrollbar,
+.session-list::-webkit-scrollbar { width: 4px; }
+.message-area::-webkit-scrollbar-track,
+.session-list::-webkit-scrollbar-track { background: transparent; }
+.message-area::-webkit-scrollbar-thumb,
+.session-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.admin-panel { padding: 16px; overflow-y: auto; flex: 1; }
+.admin-login { padding: 30px; text-align: center; }
+.admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.admin-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.admin-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.admin-list-item {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--panel-alt); padding: 8px 12px; border-radius: 8px; font-size: 13px;
+}
