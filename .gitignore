@@ -24,3 +24,4 @@ dist-ssr
 *.sw?
 
 echo "data/grants.db"
+data/
