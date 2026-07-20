@@ -290,16 +290,16 @@ export default function App() {
           </div>
 
           <div className="mode-bar">
-            {MODES.map((m) => (
-              <button
-                key={m.id}
-                className={`mode-btn ${mode === m.id ? "mode-active" : ""}`}
-                onClick={() => setMode(m.id)}
-              >
-                <m.icon size={15} className="mode-icon" />
-                {m.label}
-              </button>
-            ))}
+           {MODES.map((m) => (
+  <button
+    key={m.id}
+    className={`mode-btn ${mode === m.id ? "mode-active" : ""}`}
+    onClick={() => setMode(m.id)}
+  >
+    <m.icon size={15} className="mode-icon" />
+    <span className="mode-label">{m.label}</span>
+  </button>
+))}
           </div>
 
           {mode === "admin" ? (
