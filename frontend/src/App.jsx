@@ -5,8 +5,9 @@ import "./App.css";
 import AdminPanel from "./AdminPanel";
 import Login from "./Login";
 import { API_URL } from "./config";
-import { Satellite, FileText, GraduationCap, FilePenLine, ShieldCheck, LogOut } from "lucide-react";
+import { Satellite, FileText, GraduationCap, FilePenLine, ShieldCheck, LogOut, Menu, X } from "lucide-react";
 import logo from "./assets/logo.webp";
+
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -123,24 +124,26 @@ export default function App() {
   }, [messages, loading]);
 
   function newChat() {
-    const id = generateId();
-    setActiveId(id);
-    setMessages([]);
-    setInput("");
-  }
+  const id = generateId();
+  setActiveId(id);
+  setMessages([]);
+  setInput("");
+  if (window.innerWidth <= 640) setSidebarOpen(false);
+}
 
-  async function openSession(id) {
-    try {
-      const res = await fetch(`${API_URL}/api/sessions/${id}`, { headers: authHeaders() });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setActiveId(id);
-      setMessages(data.session.messages || []);
-      setInput("");
-    } catch (err) {
-      console.error(err);
-    }
+async function openSession(id) {
+  try {
+    const res = await fetch(`${API_URL}/api/sessions/${id}`, { headers: authHeaders() });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    setActiveId(id);
+    setMessages(data.session.messages || []);
+    setInput("");
+    if (window.innerWidth <= 640) setSidebarOpen(false);
+  } catch (err) {
+    console.error(err);
   }
+}
 
   async function deleteSession(e, id) {
     e.stopPropagation();
@@ -245,13 +248,20 @@ export default function App() {
       </div>
 
       <div className="layout">
+        {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
         <aside className={`sidebar ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
-          <div className="sidebar-header">
-            <button className="new-chat-btn" onClick={newChat}>+ New Chat</button>
-            <button className="sidebar-toggle" onClick={() => setSidebarOpen((v) => !v)} title="Toggle sidebar">
-              {sidebarOpen ? "◀" : "▶"}
-            </button>
-          </div>
+         <div className="sidebar-header">
+  <button className="new-chat-btn" onClick={newChat}>+ New Chat</button>
+  <button className="sidebar-toggle" onClick={() => setSidebarOpen((v) => !v)} title="Toggle sidebar">
+    {sidebarOpen ? "◀" : "▶"}
+  </button>
+  <button className="mobile-close-btn" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
+    <X size={18} />
+  </button>
+</div>
+
+
+
 
           {sidebarOpen && (
             <div className="session-list">
@@ -282,12 +292,15 @@ export default function App() {
 
         <div className="chat-window">
           <div className="header">
-            <div className="header-left">
-              <span className="status-dot" />
-              <span className="header-title">GNSS KNOWLEDGE BOT</span>
-            </div>
-            <span className="header-sub">v0.1 · online</span>
-          </div>
+  <div className="header-left">
+    <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+      <Menu size={18} />
+    </button>
+    <span className="status-dot" />
+    <span className="header-title">GNSS KNOWLEDGE BOT</span>
+  </div>
+  <span className="header-sub">v0.1 · online</span>
+</div>
 
           <div className="mode-bar">
            {MODES.map((m) => (
