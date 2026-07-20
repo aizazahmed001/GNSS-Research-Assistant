@@ -24,6 +24,9 @@ app.use("/api/grants", grantsRouter);
 app.use("/api/export", exportRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/sessions", sessionsRouter);
+app.get("/", (req, res) => {
+  res.json({ status: "ok", message: "GNSS Research Assistant API is running" });
+});
 
 const { signToken, requireAdmin } = require("./auth");
 
