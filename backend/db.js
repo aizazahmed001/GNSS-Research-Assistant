@@ -2,8 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const Database = require("better-sqlite3");
 
-// Ensure data/ folder exists before opening the DB file
-const dataDir = path.join(__dirname, "data");
+const dataDir = process.env.DATA_DIR || path.join(__dirname, "data");
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
 const db = new Database(path.join(dataDir, "grants.db"));
