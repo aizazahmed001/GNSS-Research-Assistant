@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { API_URL } from "./config";
+import logo from "./assets/logo.webp";
 
 export default function Login({ onLogin }) {
   const [mode, setMode] = useState("login"); // "login" | "signup"
@@ -57,8 +58,9 @@ export default function Login({ onLogin }) {
 
   return (
     <div className="login-page">
-      <div className="login-card">
-        <h1 className="login-title">GNSS Research Assistant</h1>
+     <div className="login-card">
+  <img src={logo} alt="GNSS Research Assistant logo" className="login-logo" />
+  <h1 className="login-title">GNSS Research Assistant</h1>
         <p className="login-sub">{mode === "login" ? "Log in to continue" : "Create your account"}</p>
 
         <div ref={googleBtnRef} className="google-btn-wrapper" />

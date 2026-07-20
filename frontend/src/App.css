@@ -43,11 +43,10 @@ body {
 }
 
 .page-heading-icon {
-  font-size: 38px;
-  color: var(--accent);
-  line-height: 1;
-  filter: drop-shadow(0 0 10px rgba(74, 222, 128, 0.45));
-  user-select: none;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .page-title {
@@ -784,6 +783,14 @@ body {
   justify-content: center;
   z-index: 100;
   animation: fade-in 0.15s ease;
+}
+
+.login-logo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  margin: 0 auto 14px;
+  display: block;
 }
 
 @keyframes fade-in {

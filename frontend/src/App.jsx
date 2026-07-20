@@ -6,6 +6,7 @@ import AdminPanel from "./AdminPanel";
 import Login from "./Login";
 import { API_URL } from "./config";
 import { Satellite, FileText, GraduationCap, FilePenLine, ShieldCheck, LogOut } from "lucide-react";
+import logo from "./assets/logo.webp";
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -236,7 +237,7 @@ export default function App() {
   return (
     <div className="page">
       <div className="page-heading">
-        <div className="page-heading-icon">⊕</div>
+        <img src={logo} alt="GNSS Research Assistant logo" className="page-heading-icon" />
         <div>
           <h1 className="page-title">GNSS Knowledge Bot</h1>
           <p className="page-subtitle">AI assistant for GPS · GLONASS · Galileo · BeiDou · RTK · PPP</p>
