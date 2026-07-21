@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { API_URL } from "./config";
 
 export default function AdminPanel({ token, setToken }) {
   const [password, setPassword] = useState("");
@@ -24,7 +25,7 @@ export default function AdminPanel({ token, setToken }) {
   async function login() {
     setLoginError("");
     try {
-      const res = await fetch("http://localhost:5000/api/admin/login", {
+      const res = await fetch(`${API_URL}/api/admin/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
@@ -44,13 +45,13 @@ export default function AdminPanel({ token, setToken }) {
   }
 
   async function fetchGrants() {
-    const res = await fetch("http://localhost:5000/api/grants");
+    const res = await fetch(`${API_URL}/api/grants`);
     const data = await res.json();
     setGrants(data.grants || []);
   }
 
   async function fetchDocuments() {
-    const res = await fetch("http://localhost:5000/api/documents");
+    const res = await fetch(`${API_URL}/api/documents`);
     const data = await res.json();
     setDocuments(data.documents || []);
   }
@@ -58,8 +59,8 @@ export default function AdminPanel({ token, setToken }) {
   async function saveGrant() {
     const isEdit = Boolean(editingGrant);
     const url = isEdit
-      ? `http://localhost:5000/api/grants/${editingGrant.id}`
-      : "http://localhost:5000/api/grants";
+      ? `${API_URL}/api/grants/${editingGrant.id}`
+      : `${API_URL}/api/grants`;
     const method = isEdit ? "PUT" : "POST";
 
     const res = await fetch(url, {
@@ -82,7 +83,7 @@ export default function AdminPanel({ token, setToken }) {
 
   async function deleteGrant(id) {
     if (!confirm("Delete this grant permanently?")) return;
-    await fetch(`http://localhost:5000/api/grants/${id}`, {
+    await fetch(`${API_URL}/api/grants/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -91,7 +92,7 @@ export default function AdminPanel({ token, setToken }) {
 
   async function deleteDocument(id) {
     if (!confirm("Delete this document permanently?")) return;
-    await fetch(`http://localhost:5000/api/documents/${id}`, {
+    await fetch(`${API_URL}/api/documents/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -132,10 +133,10 @@ export default function AdminPanel({ token, setToken }) {
 
       {/* EXPORT BUTTONS */}
       <div className="export-bar" style={{ display: "flex", gap: 8, margin: "12px 0 20px" }}>
-        <a href="http://localhost:5000/api/export/pdf" className="send-btn" style={{ textDecoration: "none", display: "inline-block" }}>
+        <a href={`${API_URL}/api/export/pdf`} className="send-btn" style={{ textDecoration: "none", display: "inline-block" }}>
           Export PDF
         </a>
-        <a href="http://localhost:5000/api/export/docx" className="send-btn" style={{ textDecoration: "none", display: "inline-block" }}>
+        <a href={`${API_URL}/api/export/docx`} className="send-btn" style={{ textDecoration: "none", display: "inline-block" }}>
           Export Word
         </a>
       </div>
