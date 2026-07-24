@@ -132,6 +132,8 @@ export default function App() {
   if (window.innerWidth <= 640) setSidebarOpen(false);
 }
 
+
+
 async function openSession(id) {
   try {
     const res = await fetch(`${API_URL}/api/sessions/${id}`, { headers: authHeaders() });
@@ -412,6 +414,22 @@ async function saveEdit(index) {
     </div>
   </div>
 ))}
+
+      {loading && (
+                  <div className="message-row row-bot">
+                    <div className="bubble bubble-bot signal-lock">
+                      <span className="ping-ring" />
+                      <span className="ping-dot" />
+                      <span className="signal-text">
+                        {mode === "grants"   && "Searching grants…"}
+                        {mode === "docs"     && "Reading documents…"}
+                        {mode === "proposal" && "Drafting response…"}
+                        {mode === "chat"     && "Generating response…"}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
 
                 <div ref={bottomRef} />
               </div>
