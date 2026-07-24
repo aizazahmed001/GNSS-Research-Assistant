@@ -5,7 +5,6 @@ import "./App.css";
 import AdminPanel from "./AdminPanel";
 import Login from "./Login";
 import { API_URL } from "./config";
-import { Satellite, FileText, GraduationCap, FilePenLine, ShieldCheck, LogOut, Menu, X } from "lucide-react";
 import logo from "./assets/logo.webp";
 import { Satellite, FileText, GraduationCap, FilePenLine, ShieldCheck, LogOut, Menu, X, Pencil, Check } from "lucide-react";
 
