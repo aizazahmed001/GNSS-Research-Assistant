@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const { pool } = require("../db");
 
 module.exports = function (genAI) {
   const extractionModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -41,38 +41,41 @@ Question: "${message}"`;
         filters = {};
       }
 
-      // ── Step 2: run the extracted filters through real SQL ────────────────
+      // ── Step 2: run the extracted filters through real SQL (Postgres) ─────
       let query = "SELECT * FROM grants WHERE 1=1";
       const params = [];
+      let i = 1;
 
       if (filters.country) {
-        query += " AND country LIKE ?";
+        query += ` AND country ILIKE $${i++}`;
         params.push(`%${filters.country}%`);
       }
       if (filters.research_domain) {
-        query += " AND research_domain LIKE ?";
+        query += ` AND research_domain ILIKE $${i++}`;
         params.push(`%${filters.research_domain}%`);
       }
       if (filters.funding_type) {
-        query += " AND funding_type LIKE ?";
+        query += ` AND funding_type ILIKE $${i++}`;
         params.push(`%${filters.funding_type}%`);
       }
       if (filters.grant_category) {
-        query += " AND grant_category LIKE ?";
+        query += ` AND grant_category ILIKE $${i++}`;
         params.push(`%${filters.grant_category}%`);
       }
       if (filters.keyword) {
-        query += " AND (title LIKE ? OR description LIKE ?)";
-        params.push(`%${filters.keyword}%`, `%${filters.keyword}%`);
+        query += ` AND (title ILIKE $${i} OR description ILIKE $${i})`;
+        params.push(`%${filters.keyword}%`);
+        i++;
       }
       if (filters.deadline_before) {
-        query += " AND deadline <= ?";
+        query += ` AND deadline <= $${i++}`;
         params.push(filters.deadline_before);
       }
 
       query += " ORDER BY deadline ASC LIMIT 8";
 
-      const grants = db.prepare(query).all(...params);
+      const result = await pool.query(query, params);
+      const grants = result.rows;
 
       // ── Step 3: phrase a natural answer using the real results ────────────
       if (grants.length === 0) {

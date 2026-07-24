@@ -1,7 +1,4 @@
-const db = require("./db");
-
-// Clear existing seed data to avoid duplicates on re-runs
-db.prepare("DELETE FROM grants").run();
+const { pool, initDb } = require("./db");
 
 const sampleGrants = [
   {
@@ -90,23 +87,27 @@ const sampleGrants = [
   },
 ];
 
-const insert = db.prepare(`
-  INSERT INTO grants
-    (title, country, funding_agency, eligibility, deadline, required_documents,
-     application_link, research_domain, funding_type, grant_category, description)
-  VALUES
-    (@title, @country, @funding_agency, @eligibility, @deadline, @required_documents,
-     @application_link, @research_domain, @funding_type, @grant_category, @description)
-`);
+async function seed() {
+  await initDb();
 
-let seeded = 0;
-for (const grant of sampleGrants) {
-  try {
-    insert.run(grant);
-    seeded++;
-  } catch (err) {
-    console.error(`Failed to insert "${grant.title}":`, err.message);
+  await pool.query("DELETE FROM grants");
+
+  for (const g of sampleGrants) {
+    await pool.query(
+      `INSERT INTO grants
+        (title, country, funding_agency, eligibility, deadline, required_documents,
+         application_link, research_domain, funding_type, grant_category, description)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      [g.title, g.country, g.funding_agency, g.eligibility, g.deadline, g.required_documents,
+       g.application_link, g.research_domain, g.funding_type, g.grant_category, g.description]
+    );
   }
+
+  console.log(`Seeded ${sampleGrants.length} grants.`);
+  process.exit(0);
 }
 
-console.log(`Seeded ${seeded} / ${sampleGrants.length} grants successfully.`);
+seed().catch((err) => {
+  console.error("Seed error FULL:", err);
+  process.exit(1);
+});

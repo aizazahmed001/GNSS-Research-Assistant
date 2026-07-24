@@ -3,21 +3,25 @@ const router = express.Router();
 const PDFDocument = require("pdfkit");
 const { Document, Packer, Paragraph, TextRun, HeadingLevel } = require("docx");
 const db = require("../db");
+const { pool } = require("../db");
 
-function getGrantsForExport(req) {
-  const { ids } = req.query; // comma-separated ids, or omit for all
+async function getGrantsForExport(req) {
+  const { ids } = req.query;
   if (ids) {
     const idList = ids.split(",").map(Number);
-    const placeholders = idList.map(() => "?").join(",");
-    return db.prepare(`SELECT * FROM grants WHERE id IN (${placeholders})`).all(...idList);
+    const placeholders = idList.map((_, i) => `$${i + 1}`).join(",");
+    const result = await pool.query(`SELECT * FROM grants WHERE id IN (${placeholders})`, idList);
+    return result.rows;
   }
-  return db.prepare("SELECT * FROM grants ORDER BY deadline ASC").all();
+  const result = await pool.query("SELECT * FROM grants ORDER BY deadline ASC");
+  return result.rows;
 }
 
 // ── PDF export ────────────────────────────────────────────────────────────
-router.get("/pdf", (req, res) => {
+router.get("/pdf", async (req, res) => {
   try {
-    const grants = getGrantsForExport(req);
+    const grants = await getGrantsForExport(req);
+    // ...rest of your existing PDF generation code, unchanged
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "attachment; filename=grants-report.pdf");
@@ -57,7 +61,8 @@ router.get("/pdf", (req, res) => {
 // ── Word (.docx) export ──────────────────────────────────────────────────
 router.get("/docx", async (req, res) => {
   try {
-    const grants = getGrantsForExport(req);
+    const grants = await getGrantsForExport(req);
+    // ...rest of your existing DOCX generation code, unchanged
 
     const children = [
       new Paragraph({
