@@ -7,7 +7,7 @@ import Login from "./Login";
 import { API_URL } from "./config";
 import { Satellite, FileText, GraduationCap, FilePenLine, ShieldCheck, LogOut, Menu, X } from "lucide-react";
 import logo from "./assets/logo.webp";
-
+import { Satellite, FileText, GraduationCap, FilePenLine, ShieldCheck, LogOut, Menu, X, Pencil, Check } from "lucide-react";
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -45,6 +45,8 @@ export default function App() {
   const fileInputRef = useRef(null);
   const [adminToken, setAdminToken] = useState(sessionStorage.getItem("admin_token"));
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editText, setEditText] = useState("");
 
   // ── Auth helpers ────────────────────────────────────────────────────────
   function handleLogin(token, userData) {
@@ -192,45 +194,69 @@ async function openSession(id) {
     setUploadedDocs((prev) => prev.filter((d) => d.id !== docId));
   }
 
-  async function sendMessage() {
-    if (!input.trim()) return;
-
-    let currentId = activeId;
-    if (!currentId) {
-      currentId = generateId();
-      setActiveId(currentId);
-    }
-
-    const userMsg = { role: "user", text: input, mode };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
-    setLoading(true);
-
-    const history = (mode === "chat" || mode === "proposal")
-      ? messages
-          .filter((m) => m.role === "user" || m.role === "bot")
-          .map((m) => ({ role: m.role === "user" ? "user" : "model", parts: [{ text: m.text }] }))
-      : [];
-
-    try {
-      const res = await fetch(`${API_URL}${ENDPOINT_MAP[mode]}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg.text, history }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-
-      const botMsg = { role: "bot", text: data.reply, mode };
-      setMessages((prev) => [...prev, botMsg]);
-    } catch (err) {
-      console.error(err);
-      setMessages((prev) => [...prev, { role: "bot", text: `⚠️ ${err.message || "Signal lost."}`, mode }]);
-    } finally {
-      setLoading(false);
-    }
+async function sendToBackend(text, baseMessages) {
+  let currentId = activeId;
+  if (!currentId) {
+    currentId = generateId();
+    setActiveId(currentId);
   }
 
+  const userMsg = { role: "user", text, mode };
+  const messagesWithUser = [...baseMessages, userMsg];
+  setMessages(messagesWithUser);
+  setLoading(true);
+
+  const history = (mode === "chat" || mode === "proposal")
+    ? baseMessages
+        .filter((m) => m.role === "user" || m.role === "bot")
+        .map((m) => ({ role: m.role === "user" ? "user" : "model", parts: [{ text: m.text }] }))
+    : [];
+
+  try {
+    const res = await fetch(`${API_URL}${ENDPOINT_MAP[mode]}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text, history }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    const botMsg = { role: "bot", text: data.reply, mode };
+    setMessages([...messagesWithUser, botMsg]);
+  } catch (err) {
+    console.error(err);
+    setMessages([...messagesWithUser, { role: "bot", text: `⚠️ ${err.message || "Signal lost."}`, mode }]);
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function sendMessage() {
+  if (!input.trim()) return;
+  const text = input;
+  setInput("");
+  await sendToBackend(text, messages);
+}
+
+function startEdit(index) {
+  setEditingIndex(index);
+  setEditText(messages[index].text);
+}
+
+function cancelEdit() {
+  setEditingIndex(null);
+  setEditText("");
+}
+
+async function saveEdit(index) {
+  const trimmed = editText.trim();
+  if (!trimmed) return;
+
+  const baseMessages = messages.slice(0, index); // everything before the edited message
+  setEditingIndex(null);
+  setEditText("");
+  await sendToBackend(trimmed, baseMessages);
+}
   const currentMode = MODES.find((m) => m.id === mode) || MODES[0];
 
   if (!authToken) {
@@ -336,36 +362,57 @@ async function openSession(id) {
                 )}
 
                 {messages.map((m, i) => (
-                  <div key={i} className={`message-row ${m.role === "user" ? "row-user" : m.role === "system" ? "row-system" : "row-bot"}`}>
-                    <div className="message-col">
-                      {m.role === "bot" && m.mode === "grants" && (
-                        <span className="mode-badge"><GraduationCap size={12} /> Grants</span>
-                      )}
-                      {m.role === "bot" && m.mode === "docs" && (
-                        <span className="mode-badge"><FileText size={12} /> Docs</span>
-                      )}
-                      <div className={`bubble ${m.role === "user" ? "bubble-user" : m.role === "system" ? "bubble-system" : "bubble-bot"}`}>
-                        {m.role === "bot" || m.role === "system" ? (
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
-                        ) : (
-                          m.text
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+  <div key={i} className={`message-row ${m.role === "user" ? "row-user" : m.role === "system" ? "row-system" : "row-bot"}`}>
+    <div className="message-col">
+      {m.role === "bot" && m.mode === "grants" && (
+        <span className="mode-badge"><GraduationCap size={12} /> Grants</span>
+      )}
+      {m.role === "bot" && m.mode === "docs" && (
+        <span className="mode-badge"><FileText size={12} /> Docs</span>
+      )}
 
-                {loading && (
-                  <div className="message-row row-bot">
-                    <div className="bubble bubble-bot signal-lock">
-                      <span className="ping-ring" />
-                      <span className="ping-dot" />
-                      <span className="signal-text">
-                        {mode === "grants" ? "Searching grants…" : "Acquiring signal…"}
-                      </span>
-                    </div>
-                  </div>
-                )}
+      {m.role === "user" && editingIndex === i ? (
+        <div className="edit-box">
+          <textarea
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            className="edit-textarea"
+            rows={Math.min(6, Math.max(2, Math.ceil(editText.length / 40)))}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                saveEdit(i);
+              }
+              if (e.key === "Escape") cancelEdit();
+            }}
+          />
+          <div className="edit-actions">
+            <button className="edit-cancel-btn" onClick={cancelEdit}>Cancel</button>
+            <button className="edit-save-btn" onClick={() => saveEdit(i)}>
+              <Check size={13} /> Save & Submit
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className={`bubble-wrapper ${m.role === "user" ? "bubble-wrapper-user" : ""}`}>
+          <div className={`bubble ${m.role === "user" ? "bubble-user" : m.role === "system" ? "bubble-system" : "bubble-bot"}`}>
+            {m.role === "bot" || m.role === "system" ? (
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
+            ) : (
+              m.text
+            )}
+          </div>
+          {m.role === "user" && (
+            <button className="edit-trigger-btn" onClick={() => startEdit(i)} title="Edit message">
+              <Pencil size={12} />
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  </div>
+))}
 
                 <div ref={bottomRef} />
               </div>

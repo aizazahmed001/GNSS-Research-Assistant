@@ -457,6 +457,98 @@ body {
 }
 .signal-text { font-family: "Space Mono", monospace; font-size: 12px; color: var(--text-dim); }
 
+/* ── Edit message ─────────────────────────────────────────────────────── */
+.bubble-wrapper {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+.bubble-wrapper-user {
+  flex-direction: row-reverse;
+}
+
+.edit-trigger-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.bubble-wrapper:hover .edit-trigger-btn {
+  opacity: 1;
+}
+.edit-trigger-btn:hover {
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.edit-box {
+  width: 100%;
+  min-width: 260px;
+  background: var(--panel-alt);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.edit-textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  padding: 8px 10px;
+  resize: none;
+  outline: none;
+}
+.edit-textarea:focus {
+  border-color: var(--accent);
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.edit-cancel-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.edit-cancel-btn:hover {
+  color: var(--text);
+  border-color: var(--text-dim);
+}
+
+.edit-save-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--accent);
+  color: #06170d;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.edit-save-btn:hover {
+  opacity: 0.9;
+}
+
 /* ── System message ───────────────────────────────────────────────────── */
 .row-system { justify-content: center; }
 .bubble-system {
