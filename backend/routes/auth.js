@@ -22,7 +22,7 @@ function generateCode() {
 }
 
 async function sendVerificationEmail(email, code) {
-  await resend.emails.send({
+  const result = await resend.emails.send({
     from: "GNSS Research Assistant <onboarding@resend.dev>",
     to: email,
     subject: "Verify your email — GNSS Research Assistant",
@@ -37,6 +37,12 @@ async function sendVerificationEmail(email, code) {
       </div>
     `,
   });
+
+  console.log("Resend API response:", JSON.stringify(result));
+
+  if (result.error) {
+    console.error("Resend send failed:", result.error);
+  }
 }
 
 // ── Signup ────────────────────────────────────────────────────────────────
