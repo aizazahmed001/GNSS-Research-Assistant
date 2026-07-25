@@ -726,6 +726,13 @@ body {
   background: var(--bg);
   padding: 20px;
 }
+
+.login-info {
+  color: var(--accent);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
 .login-card {
   width: 340px;
   max-width: 100%;

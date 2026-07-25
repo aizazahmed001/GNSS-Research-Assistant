@@ -27,17 +27,30 @@ async function initDb() {
     );
   `);
 
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      email TEXT UNIQUE NOT NULL,
-      password_hash TEXT,
-      name TEXT,
-      provider TEXT NOT NULL DEFAULT 'local',
-      google_id TEXT,
-      created_at TIMESTAMP DEFAULT NOW()
-    );
-  `);
+ await pool.query(`
+  CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT,
+    name TEXT,
+    provider TEXT NOT NULL DEFAULT 'local',
+    google_id TEXT,
+    email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    verification_code TEXT,
+    verification_code_expires TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
+  );
+`);
+
+await pool.query(`
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE;
+`);
+await pool.query(`
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_code TEXT;
+`);
+await pool.query(`
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_code_expires TIMESTAMP;
+`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS chat_sessions (
