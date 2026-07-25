@@ -8,7 +8,7 @@ const { pool } = require("../db");
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 function issueToken(user) {
-  return jwt.sign({ id: user.id, email: user.email, name: user.name }, process.env.JWT_SECRET, { expiresIn: "30d" });
+  return jwt.sign({ id: user.id, email: user.email, name: user.name }, process.env.JWT_SECRET, { expiresIn: "24h" });
 }
 
 function safeUser(user) {

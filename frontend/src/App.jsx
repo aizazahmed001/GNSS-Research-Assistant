@@ -27,6 +27,8 @@ const ENDPOINT_MAP = {
   proposal: "/api/proposal-chat",
 };
 
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes — adjust as needed
+
 export default function App() {
   const [authToken, setAuthToken] = useState(localStorage.getItem("auth_token"));
   const [user, setUser] = useState(null);
@@ -46,6 +48,7 @@ export default function App() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editText, setEditText] = useState("");
+  const idleTimerRef = useRef(null);
 
   // ── Auth helpers ────────────────────────────────────────────────────────
   function handleLogin(token, userData) {
@@ -54,10 +57,22 @@ export default function App() {
     setUser(userData);
   }
 
+  function resetIdleTimer() {
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    if (!authToken) return;
+
+    localStorage.setItem("last_activity", Date.now().toString());
+
+    idleTimerRef.current = setTimeout(() => {
+      forceLogout();
+    }, IDLE_TIMEOUT_MS);
+  }
+
   // Immediate, no-confirmation logout — used when a session silently expires,
   // not when the user clicks the logout button themselves
   function forceLogout() {
     localStorage.removeItem("auth_token");
+    localStorage.removeItem("last_activity");
     setAuthToken(null);
     setUser(null);
     setSessions([]);
@@ -82,9 +97,17 @@ export default function App() {
     return { Authorization: `Bearer ${authToken}` };
   }
 
-  // ── Load sessions from backend once logged in ──────────────────────────
+  // ── Load sessions + enforce idle timeout on login/mount ─────────────────
   useEffect(() => {
     if (!authToken) return;
+
+    const lastActivity = parseInt(localStorage.getItem("last_activity") || "0", 10);
+    const elapsed = Date.now() - lastActivity;
+
+    if (lastActivity && elapsed > IDLE_TIMEOUT_MS) {
+      forceLogout();
+      return;
+    }
 
     fetch(`${API_URL}/api/auth/me`, { headers: authHeaders() })
       .then((res) => {
@@ -98,6 +121,21 @@ export default function App() {
       .then((res) => res.json())
       .then((data) => setSessions(data.sessions || []))
       .catch(console.error);
+  }, [authToken]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Keep the idle timer alive while the user is active ───────────────────
+  useEffect(() => {
+    if (!authToken) return;
+
+    const events = ["mousedown", "mousemove", "keydown", "scroll", "touchstart"];
+    events.forEach((event) => window.addEventListener(event, resetIdleTimer));
+
+    resetIdleTimer(); // start the countdown immediately
+
+    return () => {
+      events.forEach((event) => window.removeEventListener(event, resetIdleTimer));
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    };
   }, [authToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Persist current session to backend whenever messages change ────────
@@ -125,28 +163,26 @@ export default function App() {
   }, [messages, loading]);
 
   function newChat() {
-  const id = generateId();
-  setActiveId(id);
-  setMessages([]);
-  setInput("");
-  if (window.innerWidth <= 640) setSidebarOpen(false);
-}
-
-
-
-async function openSession(id) {
-  try {
-    const res = await fetch(`${API_URL}/api/sessions/${id}`, { headers: authHeaders() });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
+    const id = generateId();
     setActiveId(id);
-    setMessages(data.session.messages || []);
+    setMessages([]);
     setInput("");
     if (window.innerWidth <= 640) setSidebarOpen(false);
-  } catch (err) {
-    console.error(err);
   }
-}
+
+  async function openSession(id) {
+    try {
+      const res = await fetch(`${API_URL}/api/sessions/${id}`, { headers: authHeaders() });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setActiveId(id);
+      setMessages(data.session.messages || []);
+      setInput("");
+      if (window.innerWidth <= 640) setSidebarOpen(false);
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   async function deleteSession(e, id) {
     e.stopPropagation();
@@ -195,69 +231,70 @@ async function openSession(id) {
     setUploadedDocs((prev) => prev.filter((d) => d.id !== docId));
   }
 
-async function sendToBackend(text, baseMessages) {
-  let currentId = activeId;
-  if (!currentId) {
-    currentId = generateId();
-    setActiveId(currentId);
+  async function sendToBackend(text, baseMessages) {
+    let currentId = activeId;
+    if (!currentId) {
+      currentId = generateId();
+      setActiveId(currentId);
+    }
+
+    const userMsg = { role: "user", text, mode };
+    const messagesWithUser = [...baseMessages, userMsg];
+    setMessages(messagesWithUser);
+    setLoading(true);
+
+    const history = (mode === "chat" || mode === "proposal")
+      ? baseMessages
+          .filter((m) => m.role === "user" || m.role === "bot")
+          .map((m) => ({ role: m.role === "user" ? "user" : "model", parts: [{ text: m.text }] }))
+      : [];
+
+    try {
+      const res = await fetch(`${API_URL}${ENDPOINT_MAP[mode]}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, history }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      const botMsg = { role: "bot", text: data.reply, mode };
+      setMessages([...messagesWithUser, botMsg]);
+    } catch (err) {
+      console.error(err);
+      setMessages([...messagesWithUser, { role: "bot", text: `⚠️ ${err.message || "Signal lost."}`, mode }]);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  const userMsg = { role: "user", text, mode };
-  const messagesWithUser = [...baseMessages, userMsg];
-  setMessages(messagesWithUser);
-  setLoading(true);
-
-  const history = (mode === "chat" || mode === "proposal")
-    ? baseMessages
-        .filter((m) => m.role === "user" || m.role === "bot")
-        .map((m) => ({ role: m.role === "user" ? "user" : "model", parts: [{ text: m.text }] }))
-    : [];
-
-  try {
-    const res = await fetch(`${API_URL}${ENDPOINT_MAP[mode]}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text, history }),
-    });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-
-    const botMsg = { role: "bot", text: data.reply, mode };
-    setMessages([...messagesWithUser, botMsg]);
-  } catch (err) {
-    console.error(err);
-    setMessages([...messagesWithUser, { role: "bot", text: `⚠️ ${err.message || "Signal lost."}`, mode }]);
-  } finally {
-    setLoading(false);
+  async function sendMessage() {
+    if (!input.trim()) return;
+    const text = input;
+    setInput("");
+    await sendToBackend(text, messages);
   }
-}
 
-async function sendMessage() {
-  if (!input.trim()) return;
-  const text = input;
-  setInput("");
-  await sendToBackend(text, messages);
-}
+  function startEdit(index) {
+    setEditingIndex(index);
+    setEditText(messages[index].text);
+  }
 
-function startEdit(index) {
-  setEditingIndex(index);
-  setEditText(messages[index].text);
-}
+  function cancelEdit() {
+    setEditingIndex(null);
+    setEditText("");
+  }
 
-function cancelEdit() {
-  setEditingIndex(null);
-  setEditText("");
-}
+  async function saveEdit(index) {
+    const trimmed = editText.trim();
+    if (!trimmed) return;
 
-async function saveEdit(index) {
-  const trimmed = editText.trim();
-  if (!trimmed) return;
+    const baseMessages = messages.slice(0, index);
+    setEditingIndex(null);
+    setEditText("");
+    await sendToBackend(trimmed, baseMessages);
+  }
 
-  const baseMessages = messages.slice(0, index); // everything before the edited message
-  setEditingIndex(null);
-  setEditText("");
-  await sendToBackend(trimmed, baseMessages);
-}
   const currentMode = MODES.find((m) => m.id === mode) || MODES[0];
 
   if (!authToken) {
@@ -277,18 +314,15 @@ async function saveEdit(index) {
       <div className="layout">
         {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
         <aside className={`sidebar ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
-         <div className="sidebar-header">
-  <button className="new-chat-btn" onClick={newChat}>+ New Chat</button>
-  <button className="sidebar-toggle" onClick={() => setSidebarOpen((v) => !v)} title="Toggle sidebar">
-    {sidebarOpen ? "◀" : "▶"}
-  </button>
-  <button className="mobile-close-btn" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
-    <X size={18} />
-  </button>
-</div>
-
-
-
+          <div className="sidebar-header">
+            <button className="new-chat-btn" onClick={newChat}>+ New Chat</button>
+            <button className="sidebar-toggle" onClick={() => setSidebarOpen((v) => !v)} title="Toggle sidebar">
+              {sidebarOpen ? "◀" : "▶"}
+            </button>
+            <button className="mobile-close-btn" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
+              <X size={18} />
+            </button>
+          </div>
 
           {sidebarOpen && (
             <div className="session-list">
@@ -319,27 +353,27 @@ async function saveEdit(index) {
 
         <div className="chat-window">
           <div className="header">
-  <div className="header-left">
-    <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
-      <Menu size={18} />
-    </button>
-    <span className="status-dot" />
-    <span className="header-title">GNSS KNOWLEDGE BOT</span>
-  </div>
-  <span className="header-sub">v0.1 · online</span>
-</div>
+            <div className="header-left">
+              <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+                <Menu size={18} />
+              </button>
+              <span className="status-dot" />
+              <span className="header-title">GNSS KNOWLEDGE BOT</span>
+            </div>
+            <span className="header-sub">v0.1 · online</span>
+          </div>
 
           <div className="mode-bar">
-           {MODES.map((m) => (
-  <button
-    key={m.id}
-    className={`mode-btn ${mode === m.id ? "mode-active" : ""}`}
-    onClick={() => setMode(m.id)}
-  >
-    <m.icon size={15} className="mode-icon" />
-    <span className="mode-label">{m.label}</span>
-  </button>
-))}
+            {MODES.map((m) => (
+              <button
+                key={m.id}
+                className={`mode-btn ${mode === m.id ? "mode-active" : ""}`}
+                onClick={() => setMode(m.id)}
+              >
+                <m.icon size={15} className="mode-icon" />
+                <span className="mode-label">{m.label}</span>
+              </button>
+            ))}
           </div>
 
           {mode === "admin" ? (
@@ -363,59 +397,59 @@ async function saveEdit(index) {
                 )}
 
                 {messages.map((m, i) => (
-  <div key={i} className={`message-row ${m.role === "user" ? "row-user" : m.role === "system" ? "row-system" : "row-bot"}`}>
-    <div className="message-col">
-      {m.role === "bot" && m.mode === "grants" && (
-        <span className="mode-badge"><GraduationCap size={12} /> Grants</span>
-      )}
-      {m.role === "bot" && m.mode === "docs" && (
-        <span className="mode-badge"><FileText size={12} /> Docs</span>
-      )}
+                  <div key={i} className={`message-row ${m.role === "user" ? "row-user" : m.role === "system" ? "row-system" : "row-bot"}`}>
+                    <div className="message-col">
+                      {m.role === "bot" && m.mode === "grants" && (
+                        <span className="mode-badge"><GraduationCap size={12} /> Grants</span>
+                      )}
+                      {m.role === "bot" && m.mode === "docs" && (
+                        <span className="mode-badge"><FileText size={12} /> Docs</span>
+                      )}
 
-      {m.role === "user" && editingIndex === i ? (
-        <div className="edit-box">
-          <textarea
-            value={editText}
-            onChange={(e) => setEditText(e.target.value)}
-            className="edit-textarea"
-            rows={Math.min(6, Math.max(2, Math.ceil(editText.length / 40)))}
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                saveEdit(i);
-              }
-              if (e.key === "Escape") cancelEdit();
-            }}
-          />
-          <div className="edit-actions">
-            <button className="edit-cancel-btn" onClick={cancelEdit}>Cancel</button>
-            <button className="edit-save-btn" onClick={() => saveEdit(i)}>
-              <Check size={13} /> Save & Submit
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className={`bubble-wrapper ${m.role === "user" ? "bubble-wrapper-user" : ""}`}>
-          <div className={`bubble ${m.role === "user" ? "bubble-user" : m.role === "system" ? "bubble-system" : "bubble-bot"}`}>
-            {m.role === "bot" || m.role === "system" ? (
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
-            ) : (
-              m.text
-            )}
-          </div>
-          {m.role === "user" && (
-            <button className="edit-trigger-btn" onClick={() => startEdit(i)} title="Edit message">
-              <Pencil size={12} />
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  </div>
-))}
+                      {m.role === "user" && editingIndex === i ? (
+                        <div className="edit-box">
+                          <textarea
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            className="edit-textarea"
+                            rows={Math.min(6, Math.max(2, Math.ceil(editText.length / 40)))}
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                saveEdit(i);
+                              }
+                              if (e.key === "Escape") cancelEdit();
+                            }}
+                          />
+                          <div className="edit-actions">
+                            <button className="edit-cancel-btn" onClick={cancelEdit}>Cancel</button>
+                            <button className="edit-save-btn" onClick={() => saveEdit(i)}>
+                              <Check size={13} /> Save & Submit
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className={`bubble-wrapper ${m.role === "user" ? "bubble-wrapper-user" : ""}`}>
+                          <div className={`bubble ${m.role === "user" ? "bubble-user" : m.role === "system" ? "bubble-system" : "bubble-bot"}`}>
+                            {m.role === "bot" || m.role === "system" ? (
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
+                            ) : (
+                              m.text
+                            )}
+                          </div>
+                          {m.role === "user" && (
+                            <button className="edit-trigger-btn" onClick={() => startEdit(i)} title="Edit message">
+                              <Pencil size={12} />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
 
-      {loading && (
+                {loading && (
                   <div className="message-row row-bot">
                     <div className="bubble bubble-bot signal-lock">
                       <span className="ping-ring" />
@@ -429,7 +463,6 @@ async function saveEdit(index) {
                     </div>
                   </div>
                 )}
-
 
                 <div ref={bottomRef} />
               </div>
