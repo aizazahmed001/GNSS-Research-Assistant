@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { API_URL } from "./config";
 import logo from "./assets/logo.webp";
+import { Satellite } from "lucide-react";
 
 export default function Login({ onLogin }) {
   const [mode, setMode] = useState("login"); // "login" | "signup"
@@ -19,7 +20,8 @@ export default function Login({ onLogin }) {
     window.google.accounts.id.renderButton(googleBtnRef.current, {
       theme: "filled_black",
       size: "large",
-      width: 280,
+      width: 320,
+      shape: "pill",
     });
   }, []);
 
@@ -57,50 +59,72 @@ export default function Login({ onLogin }) {
   }
 
   return (
-    <div className="login-page">
-      <div className="login-card">
-        <img src={logo} alt="GNSS Research Assistant logo" className="login-logo" />
-        <h1 className="login-title">GNSS Research Assistant</h1>
-        <p className="login-sub">{mode === "login" ? "Log in to continue" : "Create your account"}</p>
+    <div className="auth-page">
+      {/* Subtle orbital background lines — decorative only */}
+      <div className="auth-orbit auth-orbit-1" />
+      <div className="auth-orbit auth-orbit-2" />
+      <div className="auth-glow auth-glow-cyan" />
+      <div className="auth-glow auth-glow-indigo" />
 
-        <div ref={googleBtnRef} className="google-btn-wrapper" />
+      <div className="auth-card">
+        <div className="auth-brand">
+          <div className="auth-brand-icon">
+            <img src={logo} alt="" className="auth-brand-logo" />
+            <span className="auth-brand-ping" />
+          </div>
+          <h1 className="auth-title">GNSS Research AI</h1>
+          <p className="auth-subtitle">
+            {mode === "login" ? "Welcome back — log in to continue" : "Create your account to get started"}
+          </p>
+        </div>
 
-        <div className="login-divider"><span>or</span></div>
+        <div className="auth-google-wrapper" ref={googleBtnRef} />
 
-        <form onSubmit={handleSubmit} className="login-form">
+        <div className="auth-divider"><span>or continue with email</span></div>
+
+        <form onSubmit={handleSubmit} className="auth-form">
           {mode === "signup" && (
-            <input
-              placeholder="Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="text-input"
-            />
+            <div className="auth-field">
+              <input
+                placeholder="Full name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="auth-input"
+              />
+            </div>
           )}
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="text-input"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="text-input"
-            required
-          />
-          {error && <p className="login-error">{error}</p>}
-          <button type="submit" className="send-btn login-submit">
-            {mode === "login" ? "Log In" : "Sign Up"}
+          <div className="auth-field">
+            <input
+              type="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="auth-input"
+              required
+            />
+          </div>
+          <div className="auth-field">
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="auth-input"
+              required
+            />
+          </div>
+
+          {error && <p className="auth-error">{error}</p>}
+
+          <button type="submit" className="auth-submit-btn">
+            <Satellite size={15} />
+            {mode === "login" ? "Log In" : "Create Account"}
           </button>
         </form>
 
-        <p className="login-switch">
+        <p className="auth-switch">
           {mode === "login" ? "Don't have an account? " : "Already have an account? "}
-          <button className="login-switch-btn" onClick={() => setMode(mode === "login" ? "signup" : "login")}>
+          <button className="auth-switch-btn" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); }}>
             {mode === "login" ? "Sign up" : "Log in"}
           </button>
         </p>
