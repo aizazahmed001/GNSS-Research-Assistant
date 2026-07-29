@@ -6,7 +6,7 @@ import AdminPanel from "./AdminPanel";
 import Login from "./Login";
 import { API_URL } from "./config";
 import logo from "./assets/logo.webp";
-import { Satellite, FileText, GraduationCap, FilePenLine, ShieldCheck, LogOut, Menu, X, Pencil, Check } from "lucide-react";
+import { Satellite, FileText, GraduationCap, FilePenLine, ShieldCheck, LogOut, Menu, X, Pencil, Check, Copy } from "lucide-react";
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -49,6 +49,7 @@ export default function App() {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editText, setEditText] = useState("");
   const idleTimerRef = useRef(null);
+  const [copiedIndex, setCopiedIndex] = useState(null);
 
   // ── Auth helpers ────────────────────────────────────────────────────────
   function handleLogin(token, userData) {
@@ -68,8 +69,6 @@ export default function App() {
     }, IDLE_TIMEOUT_MS);
   }
 
-  // Immediate, no-confirmation logout — used when a session silently expires,
-  // not when the user clicks the logout button themselves
   function forceLogout() {
     localStorage.removeItem("auth_token");
     localStorage.removeItem("last_activity");
@@ -97,7 +96,6 @@ export default function App() {
     return { Authorization: `Bearer ${authToken}` };
   }
 
-  // ── Load sessions + enforce idle timeout on login/mount ─────────────────
   useEffect(() => {
     if (!authToken) return;
 
@@ -123,14 +121,13 @@ export default function App() {
       .catch(console.error);
   }, [authToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Keep the idle timer alive while the user is active ───────────────────
   useEffect(() => {
     if (!authToken) return;
 
     const events = ["mousedown", "mousemove", "keydown", "scroll", "touchstart"];
     events.forEach((event) => window.addEventListener(event, resetIdleTimer));
 
-    resetIdleTimer(); // start the countdown immediately
+    resetIdleTimer();
 
     return () => {
       events.forEach((event) => window.removeEventListener(event, resetIdleTimer));
@@ -138,7 +135,6 @@ export default function App() {
     };
   }, [authToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Persist current session to backend whenever messages change ────────
   useEffect(() => {
     if (!activeId || !authToken) return;
     const title = derivedTitle(messages);
@@ -223,6 +219,16 @@ export default function App() {
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function copyMessage(text, index) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 1500);
+    } catch (err) {
+      console.error("Copy failed:", err);
     }
   }
 
@@ -438,9 +444,16 @@ export default function App() {
                               m.text
                             )}
                           </div>
+
                           {m.role === "user" && (
                             <button className="edit-trigger-btn" onClick={() => startEdit(i)} title="Edit message">
                               <Pencil size={12} />
+                            </button>
+                          )}
+
+                          {(m.role === "bot" || m.role === "system") && (
+                            <button className="copy-trigger-btn" onClick={() => copyMessage(m.text, i)} title="Copy">
+                              {copiedIndex === i ? <Check size={12} /> : <Copy size={12} />}
                             </button>
                           )}
                         </div>

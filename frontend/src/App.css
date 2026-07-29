@@ -467,6 +467,27 @@ body {
   flex-direction: row-reverse;
 }
 
+.copy-trigger-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+.bubble-wrapper:hover .copy-trigger-btn {
+  opacity: 1;
+}
+.copy-trigger-btn:hover {
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+
 .edit-trigger-btn {
   background: transparent;
   border: none;
@@ -884,7 +905,10 @@ body {
   .page-heading { margin-bottom: 10px; }
   .page-title { font-size: 16px; }
   .page-subtitle { font-size: 11px; }
-
+   .edit-trigger-btn,
+  .copy-trigger-btn {
+    opacity: 1;
+  }
   .layout {
     position: relative;
     flex-direction: row; /* chat stays full width, sidebar overlays */
