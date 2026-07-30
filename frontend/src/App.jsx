@@ -6,7 +6,7 @@ import AdminPanel from "./AdminPanel";
 import Login from "./Login";
 import { API_URL } from "./config";
 import logo from "./assets/logo.webp";
-import { Satellite, FileText, GraduationCap, FilePenLine, ShieldCheck, LogOut, Menu, X, Pencil, Check, Copy } from "lucide-react";
+import { Satellite, FileText, GraduationCap, FilePenLine, ShieldCheck, LogOut, Menu, X, Pencil, Check, Copy, Search, MessageSquare, Trash2, Paperclip } from "lucide-react";
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -50,6 +50,7 @@ export default function App() {
   const [editText, setEditText] = useState("");
   const idleTimerRef = useRef(null);
   const [copiedIndex, setCopiedIndex] = useState(null);
+  const [sessionSearch, setSessionSearch] = useState("");
 
   // ── Auth helpers ────────────────────────────────────────────────────────
   function handleLogin(token, userData) {
@@ -303,6 +304,11 @@ export default function App() {
 
   const currentMode = MODES.find((m) => m.id === mode) || MODES[0];
 
+  // Fixed: must be inside the component (it reads `sessions` and `sessionSearch` state)
+  const filteredSessions = sessions.filter((s) =>
+    s.title.toLowerCase().includes(sessionSearch.toLowerCase())
+  );
+
   if (!authToken) {
     return <Login onLogin={handleLogin} />;
   }
@@ -318,66 +324,93 @@ export default function App() {
       </div>
 
       <div className="layout">
-        {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
-        <aside className={`sidebar ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
-          <div className="sidebar-header">
-            <button className="new-chat-btn" onClick={newChat}>+ New Chat</button>
-            <button className="sidebar-toggle" onClick={() => setSidebarOpen((v) => !v)} title="Toggle sidebar">
-              {sidebarOpen ? "◀" : "▶"}
-            </button>
-            <button className="mobile-close-btn" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
+        {sidebarOpen && <div className="gs-sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
+        <aside className={`gs-sidebar ${sidebarOpen ? "gs-sidebar-open" : "gs-sidebar-closed"}`}>
+          <div className="gs-sidebar-brand">
+            <img src={logo} alt="" className="gs-sidebar-logo" />
+            {sidebarOpen && <span className="gs-sidebar-brand-text">GNSS Research AI</span>}
+            <button className="gs-mobile-close-btn" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
               <X size={18} />
             </button>
           </div>
 
+          <div className="gs-sidebar-actions">
+            <button className="gs-new-chat-btn" onClick={newChat}>
+              <span className="gs-new-chat-plus">+</span>
+              {sidebarOpen && <span>New Chat</span>}
+            </button>
+            <button className="gs-sidebar-toggle" onClick={() => setSidebarOpen((v) => !v)} title="Toggle sidebar">
+              {sidebarOpen ? "◀" : "▶"}
+            </button>
+          </div>
+
           {sidebarOpen && (
-            <div className="session-list">
-              {sessions.length === 0 && <p className="no-sessions">No history yet</p>}
-              {sessions.map((s) => (
+            <div className="gs-search-wrapper">
+              <Search size={14} className="gs-search-icon" />
+              <input
+                className="gs-search-input"
+                placeholder="Search conversations..."
+                value={sessionSearch}
+                onChange={(e) => setSessionSearch(e.target.value)}
+              />
+            </div>
+          )}
+
+          {sidebarOpen && (
+            <div className="gs-session-list">
+              {filteredSessions.length === 0 && (
+                <p className="gs-no-sessions">
+                  {sessionSearch ? "No matching conversations" : "No history yet"}
+                </p>
+              )}
+              {filteredSessions.map((s) => (
                 <div
                   key={s.id}
-                  className={`session-item ${s.id === activeId ? "session-active" : ""}`}
+                  className={`gs-session-item ${s.id === activeId ? "gs-session-active" : ""}`}
                   onClick={() => openSession(s.id)}
                 >
-                  <span className="session-dot" />
-                  <span className="session-title">{s.title}</span>
-                  <button className="session-delete" onClick={(e) => deleteSession(e, s.id)} title="Delete">✕</button>
+                  <MessageSquare size={13} className="gs-session-icon" />
+                  <span className="gs-session-title">{s.title}</span>
+                  <button className="gs-session-delete" onClick={(e) => deleteSession(e, s.id)} title="Delete">
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               ))}
             </div>
           )}
 
-          {sidebarOpen && (
-            <div className="sidebar-footer">
-              <span className="user-email">{user?.email}</span>
-              <button className="logout-btn" onClick={requestLogout} title="Log out">
-                <LogOut size={14} />
-              </button>
+          <div className="gs-sidebar-footer">
+            <div className="gs-user-info">
+              <div className="gs-user-avatar">{user?.email?.[0]?.toUpperCase() || "U"}</div>
+              {sidebarOpen && <span className="gs-user-email">{user?.email}</span>}
             </div>
-          )}
+            <button className="gs-logout-btn" onClick={requestLogout} title="Log out">
+              <LogOut size={15} />
+            </button>
+          </div>
         </aside>
 
-        <div className="chat-window">
-          <div className="header">
-            <div className="header-left">
-              <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+        <div className="gs-chat-window">
+          <div className="gs-header">
+            <div className="gs-header-left">
+              <button className="gs-mobile-menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
                 <Menu size={18} />
               </button>
-              <span className="status-dot" />
-              <span className="header-title">GNSS KNOWLEDGE BOT</span>
+              <span className="gs-status-dot" />
+              <span className="gs-header-title">GNSS Research AI</span>
             </div>
-            <span className="header-sub">v0.1 · online</span>
+            <span className="gs-header-sub">v0.1 · online</span>
           </div>
 
-          <div className="mode-bar">
+          <div className="gs-mode-bar">
             {MODES.map((m) => (
               <button
                 key={m.id}
-                className={`mode-btn ${mode === m.id ? "mode-active" : ""}`}
+                className={`gs-mode-btn ${mode === m.id ? "gs-mode-active" : ""}`}
                 onClick={() => setMode(m.id)}
               >
-                <m.icon size={15} className="mode-icon" />
-                <span className="mode-label">{m.label}</span>
+                <m.icon size={15} className="gs-mode-icon" />
+                <span className="gs-mode-label">{m.label}</span>
               </button>
             ))}
           </div>
@@ -386,14 +419,14 @@ export default function App() {
             <AdminPanel token={adminToken} setToken={setAdminToken} />
           ) : (
             <>
-              <div className="message-area">
+              <div className="gs-message-area">
                 {messages.length === 0 && (
-                  <div className="empty-state">
-                    <div className="empty-icon">
-                      <currentMode.icon size={32} strokeWidth={1.5} />
+                  <div className="gs-empty-state">
+                    <div className="gs-empty-icon">
+                      <currentMode.icon size={30} strokeWidth={1.5} />
                     </div>
-                    <div className="empty-title">{currentMode.label}</div>
-                    <div className="empty-sub">
+                    <div className="gs-empty-title">{currentMode.label}</div>
+                    <div className="gs-empty-sub">
                       {mode === "chat"   && "Ask anything about GNSS, RTK, PPP, or research topics."}
                       {mode === "docs"   && "Upload a document above, then ask questions about it."}
                       {mode === "grants" && "Ask in plain English — e.g. \"Find GNSS PhD scholarships in Europe closing this year.\""}
@@ -403,21 +436,21 @@ export default function App() {
                 )}
 
                 {messages.map((m, i) => (
-                  <div key={i} className={`message-row ${m.role === "user" ? "row-user" : m.role === "system" ? "row-system" : "row-bot"}`}>
-                    <div className="message-col">
+                  <div key={i} className={`gs-message-row ${m.role === "user" ? "gs-row-user" : m.role === "system" ? "gs-row-system" : "gs-row-bot"}`}>
+                    <div className="gs-message-col">
                       {m.role === "bot" && m.mode === "grants" && (
-                        <span className="mode-badge"><GraduationCap size={12} /> Grants</span>
+                        <span className="gs-mode-badge"><GraduationCap size={11} /> Grants</span>
                       )}
                       {m.role === "bot" && m.mode === "docs" && (
-                        <span className="mode-badge"><FileText size={12} /> Docs</span>
+                        <span className="gs-mode-badge"><FileText size={11} /> Docs</span>
                       )}
 
                       {m.role === "user" && editingIndex === i ? (
-                        <div className="edit-box">
+                        <div className="gs-edit-box">
                           <textarea
                             value={editText}
                             onChange={(e) => setEditText(e.target.value)}
-                            className="edit-textarea"
+                            className="gs-edit-textarea"
                             rows={Math.min(6, Math.max(2, Math.ceil(editText.length / 40)))}
                             autoFocus
                             onKeyDown={(e) => {
@@ -428,31 +461,35 @@ export default function App() {
                               if (e.key === "Escape") cancelEdit();
                             }}
                           />
-                          <div className="edit-actions">
-                            <button className="edit-cancel-btn" onClick={cancelEdit}>Cancel</button>
-                            <button className="edit-save-btn" onClick={() => saveEdit(i)}>
+                          <div className="gs-edit-actions">
+                            <button className="gs-edit-cancel-btn" onClick={cancelEdit}>Cancel</button>
+                            <button className="gs-edit-save-btn" onClick={() => saveEdit(i)}>
                               <Check size={13} /> Save & Submit
                             </button>
                           </div>
                         </div>
                       ) : (
-                        <div className={`bubble-wrapper ${m.role === "user" ? "bubble-wrapper-user" : ""}`}>
-                          <div className={`bubble ${m.role === "user" ? "bubble-user" : m.role === "system" ? "bubble-system" : "bubble-bot"}`}>
-                            {m.role === "bot" || m.role === "system" ? (
+                        <div className={`gs-bubble-wrapper ${m.role === "user" ? "gs-bubble-wrapper-user" : ""}`}>
+                          {m.role === "user" ? (
+                            <div className="gs-bubble-user">{m.text}</div>
+                          ) : m.role === "system" ? (
+                            <div className="gs-bubble-system">
                               <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
-                            ) : (
-                              m.text
-                            )}
-                          </div>
+                            </div>
+                          ) : (
+                            <div className="gs-bubble-bot">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
+                            </div>
+                          )}
 
                           {m.role === "user" && (
-                            <button className="edit-trigger-btn" onClick={() => startEdit(i)} title="Edit message">
+                            <button className="gs-edit-trigger-btn" onClick={() => startEdit(i)} title="Edit message">
                               <Pencil size={12} />
                             </button>
                           )}
 
                           {(m.role === "bot" || m.role === "system") && (
-                            <button className="copy-trigger-btn" onClick={() => copyMessage(m.text, i)} title="Copy">
+                            <button className="gs-copy-trigger-btn" onClick={() => copyMessage(m.text, i)} title="Copy">
                               {copiedIndex === i ? <Check size={12} /> : <Copy size={12} />}
                             </button>
                           )}
@@ -463,11 +500,12 @@ export default function App() {
                 ))}
 
                 {loading && (
-                  <div className="message-row row-bot">
-                    <div className="bubble bubble-bot signal-lock">
-                      <span className="ping-ring" />
-                      <span className="ping-dot" />
-                      <span className="signal-text">
+                  <div className="gs-message-row gs-row-bot">
+                    <div className="gs-loading-indicator">
+                      <span className="gs-loading-dot" />
+                      <span className="gs-loading-dot" />
+                      <span className="gs-loading-dot" />
+                      <span className="gs-loading-text">
                         {mode === "grants"   && "Searching grants…"}
                         {mode === "docs"     && "Reading documents…"}
                         {mode === "proposal" && "Drafting response…"}
@@ -481,54 +519,59 @@ export default function App() {
               </div>
 
               {mode === "docs" && uploadedDocs.length > 0 && (
-                <div className="docs-bar">
+                <div className="gs-docs-bar">
                   {uploadedDocs.map((d) => (
-                    <span key={d.id} className="doc-tag">
-                      📄 {d.name}
-                      <span className="doc-chunks">{d.chunkCount} chunks</span>
-                      <button className="doc-remove" onClick={() => removeDoc(d.id)} title="Remove">✕</button>
+                    <span key={d.id} className="gs-doc-tag">
+                      <FileText size={12} />
+                      {d.name}
+                      <span className="gs-doc-chunks">{d.chunkCount} chunks</span>
+                      <button className="gs-doc-remove" onClick={() => removeDoc(d.id)} title="Remove">
+                        <X size={11} />
+                      </button>
                     </span>
                   ))}
                 </div>
               )}
               {uploading && (
-                <div className="docs-bar">
-                  <span className="doc-tag uploading-tag">⏳ Processing file…</span>
+                <div className="gs-docs-bar">
+                  <span className="gs-doc-tag gs-uploading-tag">⏳ Processing file…</span>
                 </div>
               )}
 
-              <div className="input-row">
-                {mode === "docs" && (
-                  <>
-                    <button
-                      className="attach-btn"
-                      onClick={() => fileInputRef.current?.click()}
-                      title="Upload file (.txt, .pdf, .csv, .json, .md)"
-                      disabled={uploading}
-                    >
-                      📎
-                    </button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".txt,.pdf,.csv,.json,.md"
-                      style={{ display: "none" }}
-                      onChange={handleFileChange}
-                    />
-                  </>
-                )}
+              <div className="gs-input-row">
+                <div className="gs-input-shell">
+                  {mode === "docs" && (
+                    <>
+                      <button
+                        className="gs-attach-btn"
+                        onClick={() => fileInputRef.current?.click()}
+                        title="Upload file (.txt, .pdf, .csv, .json, .md)"
+                        disabled={uploading}
+                      >
+                        <Paperclip size={17} />
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".txt,.pdf,.csv,.json,.md"
+                        style={{ display: "none" }}
+                        onChange={handleFileChange}
+                      />
+                    </>
+                  )}
 
-                <input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                  className="text-input"
-                  placeholder={currentMode.placeholder}
-                  disabled={uploading}
-                />
-                <button onClick={sendMessage} className="send-btn" disabled={loading || uploading}>
-                  Send
-                </button>
+                  <input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                    className="gs-text-input"
+                    placeholder={currentMode.placeholder}
+                    disabled={uploading}
+                  />
+                  <button onClick={sendMessage} className="gs-send-btn" disabled={loading || uploading}>
+                    <Satellite size={16} />
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -536,7 +579,7 @@ export default function App() {
       </div>
 
       {showLogoutConfirm && (
-        <div className="modal-overlay" onClick={cancelLogout}>
+        <div className="modal-overlay" onClick={cancelLogout}>  
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-icon">
               <LogOut size={22} />
