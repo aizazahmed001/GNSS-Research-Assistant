@@ -397,40 +397,6 @@ body {
   word-break: break-word;
 }
 
-.gs-bubble-user {
-  background: var(--gs-input);
-  border: 1px solid var(--gs-border);
-  color: var(--gs-text);
-  padding: 11px 15px;
-  border-radius: 14px 14px 4px 14px;
-  font-size: 14.5px;
-  line-height: 1.55;
-  word-break: break-word;
-  text-align: left;
-}
-
-.gs-bubble-bot {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--gs-border);
-  border-radius: 14px 14px 14px 4px;
-  color: var(--gs-text);
-  font-size: 14.5px;
-  line-height: 1.7;
-  padding: 14px 18px;
-  text-align: left;
-}
-
-.gs-bubble-system {
-  background: rgba(148, 163, 184, 0.04);
-  border: 1px dashed var(--gs-border);
-  border-radius: 12px;
-  color: var(--gs-text-dim);
-  font-size: 13px;
-  font-style: italic;
-  padding: 10px 14px;
-  text-align: left;
-}
-
 /* AI response — NOT a heavy bubble, per spec: clean typography, generous spacing */
 .gs-bubble-bot, .gs-bubble-system {
   color: var(--gs-text);
@@ -444,8 +410,8 @@ body {
   font-style: italic;
 }
 
-.gs-bubble-bot p, .gs-bubble-system p { margin: 17px 20px 12px 0; }
-.gs-bubble-bot p:last-child { margin-bottom: 16px; }
+.gs-bubble-bot p, .gs-bubble-system p { margin: 0 0 12px 0; }
+.gs-bubble-bot p:last-child { margin-bottom: 0; }
 .gs-bubble-bot strong { color: var(--gs-cyan); font-weight: 600; }
 .gs-bubble-bot em { color: var(--gs-text); }
 .gs-bubble-bot ul, .gs-bubble-bot ol { margin: 8px 0; padding-left: 22px; }

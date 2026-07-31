@@ -73,9 +73,7 @@ await pool.query(`
     );
   `);
 
-  ///changed
-
-  await pool.query(`
+ await pool.query(`
   CREATE TABLE IF NOT EXISTS document_chunks (
     id SERIAL PRIMARY KEY,
     document_id INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
@@ -102,19 +100,6 @@ await pool.query(`
       created_at TIMESTAMP DEFAULT NOW()
     );
   `);
-
-  //added
-  await pool.query(`
-  DO $$
-  BEGIN
-    IF EXISTS (
-      SELECT 1 FROM information_schema.columns
-      WHERE table_name = 'document_chunks' AND column_name = 'embedding'
-    ) THEN
-      ALTER TABLE document_chunks ALTER COLUMN embedding TYPE vector(3072);
-    END IF;
-  END $$;
-`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS key_findings (

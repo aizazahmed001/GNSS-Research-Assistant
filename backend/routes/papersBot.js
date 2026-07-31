@@ -2,6 +2,16 @@ const express = require("express");
 const router = express.Router();
 const { pool } = require("../db");
 
+// Also pull relevant math formulas, case studies, and references —
+// broad match since these are thesis-specific reference data, not filtered like papers
+const formulasResult = await pool.query(`SELECT * FROM math_formulas LIMIT 15`);
+const caseStudiesResult = await pool.query(`SELECT * FROM thesis_case_studies LIMIT 15`);
+const referencesResult = await pool.query(`SELECT * FROM academic_references LIMIT 15`);
+
+const formulas = formulasResult.rows;
+const caseStudies = caseStudiesResult.rows;
+const references = referencesResult.rows;
+
 module.exports = function (genAI) {
   const extractionModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   const answerModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
