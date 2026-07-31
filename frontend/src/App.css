@@ -444,8 +444,8 @@ body {
   font-style: italic;
 }
 
-.gs-bubble-bot p, .gs-bubble-system p { margin: 0 0 12px 0; }
-.gs-bubble-bot p:last-child { margin-bottom: 0; }
+.gs-bubble-bot p, .gs-bubble-system p { margin: 17px 20px 12px 0; }
+.gs-bubble-bot p:last-child { margin-bottom: 16px; }
 .gs-bubble-bot strong { color: var(--gs-cyan); font-weight: 600; }
 .gs-bubble-bot em { color: var(--gs-text); }
 .gs-bubble-bot ul, .gs-bubble-bot ol { margin: 8px 0; padding-left: 22px; }
