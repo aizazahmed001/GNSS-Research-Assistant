@@ -2,15 +2,6 @@ const express = require("express");
 const router = express.Router();
 const { pool } = require("../db");
 
-// Also pull relevant math formulas, case studies, and references —
-// broad match since these are thesis-specific reference data, not filtered like papers
-const formulasResult = await pool.query(`SELECT * FROM math_formulas LIMIT 15`);
-const caseStudiesResult = await pool.query(`SELECT * FROM thesis_case_studies LIMIT 15`);
-const referencesResult = await pool.query(`SELECT * FROM academic_references LIMIT 15`);
-
-const formulas = formulasResult.rows;
-const caseStudies = caseStudiesResult.rows;
-const references = referencesResult.rows;
 
 module.exports = function (genAI) {
   const extractionModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -103,12 +94,45 @@ Key findings:\n${paperFindings || "  (none recorded)"}`;
         })
         .join("\n\n---\n\n");
 
+        const formulasSummary = formulas
+       .map((f) => `- [${f.id}] ${f.name}: ${f.latex} — ${f.description}`)
+        .join("\n");
+
+        const caseStudiesSummary = caseStudies
+      .map((c) => `- ${c.region} Mw${c.magnitude_mw} (${c.date}): prep zone ${c.prep_zone_km}km, lead time ${c.lead_time_days}`)
+      .join("\n");
+
+      const referencesSummary = references
+      .map((r) => `- [${r.ref_num}] ${r.citation}`)
+      .join("\n");
+
+
+      // Also pull relevant math formulas, case studies, and references —
+// broad match since these are thesis-specific reference data, not filtered like papers
+const formulasResult = await pool.query(`SELECT * FROM math_formulas LIMIT 15`);
+const caseStudiesResult = await pool.query(`SELECT * FROM thesis_case_studies LIMIT 15`);
+const referencesResult = await pool.query(`SELECT * FROM academic_references LIMIT 15`);
+
+const formulas = formulasResult.rows;
+const caseStudies = caseStudiesResult.rows;
+const references = referencesResult.rows;
+
+
       const answerPrompt = `You are a research assistant answering questions about a set of academic papers on GNSS, ionosphere, and earthquake precursor research. A user asked: "${message}"
 
-Here is the matching paper data from the database:
+MATCHING PAPERS:
 ${papersSummary}
 
-Answer using ONLY the information above. Cite specific values, authors, and papers by name. Use markdown formatting. If the question asks to compare papers, do so directly using the actual findings listed.`;
+RELEVANT FORMULAS (reference only when directly relevant to the question):
+${formulasSummary}
+
+EARTHQUAKE CASE STUDY DATA (reference only when directly relevant):
+${caseStudiesSummary}
+
+ACADEMIC REFERENCES (cite by [number] when relevant):
+${referencesSummary}
+
+Answer using ONLY the information above. Cite specific values, authors, papers, formulas, or case studies by name/number. Use markdown formatting, including LaTeX-style notation for formulas where relevant. If the question asks to compare papers or case studies, do so directly using the actual data listed.`;
 
       const answer = await answerModel.generateContent(answerPrompt);
 

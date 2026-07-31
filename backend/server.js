@@ -141,10 +141,26 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
   }
 });
 
-// ── List uploaded documents ───────────────────────────────────────────────────
-app.get("/api/documents", (req, res) => {
-  res.json({ documents: getDocumentSummaries() });
+app.get("/api/documents", async (req, res) => {
+  try {
+    const documents = await getDocumentSummaries(); // already returns an array
+    res.json({ documents }); // ✅ wraps correctly: { documents: [...] }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch documents" });
+  }
 });
+
+async function fetchDocuments() {
+  try {
+    const res = await fetch(`${API_URL}/api/documents`);
+    const data = await res.json();
+    setDocuments(Array.isArray(data.documents) ? data.documents : []);
+  } catch (err) {
+    console.error("Failed to fetch documents:", err);
+    setDocuments([]);
+  }
+}
 
 // ── Delete a document ──────────────────────────────────────────────────────────
 app.delete("/api/documents/:id", requireAdmin, (req, res) => {
