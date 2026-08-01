@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { API_URL } from "./config";
 import logo from "./assets/logo.webp";
 import { Satellite } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
+
 
 export default function Login({ onLogin }) {
   const [mode, setMode] = useState("login"); // "login" | "signup"
@@ -58,8 +60,13 @@ export default function Login({ onLogin }) {
     }
   }
 
+
+
   return (
     <div className="auth-page">
+      <div className="theme-toggle-corner">
+    <ThemeToggle />
+  </div>
       {/* Subtle orbital background lines — decorative only */}
       <div className="auth-orbit auth-orbit-1" />
       <div className="auth-orbit auth-orbit-2" />

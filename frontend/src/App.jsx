@@ -7,6 +7,7 @@ import Login from "./Login";
 import { API_URL } from "./config";
 import logo from "./assets/logo.webp";
 import { Satellite, FileText, GraduationCap, FilePenLine, ShieldCheck, LogOut, Menu, X, Pencil, Check, Copy, Search, MessageSquare, Trash2, Paperclip } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -391,17 +392,19 @@ export default function App() {
         </aside>
 
         <div className="gs-chat-window">
-          <div className="gs-header">
-            <div className="gs-header-left">
-              <button className="gs-mobile-menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
-                <Menu size={18} />
-              </button>
-              <span className="gs-status-dot" />
-              <span className="gs-header-title">GNSS Research AI</span>
-            </div>
-            <span className="gs-header-sub">v0.1 · online</span>
-          </div>
-
+         <div className="gs-header">
+  <div className="gs-header-left">
+    <button className="gs-mobile-menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+      <Menu size={18} />
+    </button>
+    <span className="gs-status-dot" />
+    <span className="gs-header-title">GNSS Research AI</span>
+  </div>
+  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+    <span className="gs-header-sub">v0.1 · online</span>
+    <ThemeToggle />
+  </div>
+</div>
           <div className="gs-mode-bar">
             {MODES.map((m) => (
               <button

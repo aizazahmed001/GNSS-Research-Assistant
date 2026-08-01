@@ -118,7 +118,7 @@ export default function AdminPanel({ token, setToken }) {
           onKeyDown={(e) => e.key === "Enter" && login()}
           className="text-input"
         />
-        <button onClick={login} className="send-btn" style={{ marginTop: 10 }}>
+        <button onClick={login} className="primary-btn" style={{ marginTop: 10 }}>
           Log in
         </button>
         {loginError && <p style={{ color: "#f66" }}>{loginError}</p>}
@@ -130,15 +130,15 @@ export default function AdminPanel({ token, setToken }) {
     <div className="admin-panel">
       <div className="admin-header">
         <h3>Admin Panel</h3>
-        <button onClick={logout} className="mode-btn">Log out</button>
+        <button onClick={logout} className="primary-btn">Log out</button>
       </div>
 
       {/* EXPORT BUTTONS */}
       <div className="export-bar" style={{ display: "flex", gap: 8, margin: "12px 0 20px" }}>
-        <a href={`${API_URL}/api/export/pdf`} className="send-btn" style={{ textDecoration: "none", display: "inline-block" }}>
+        <a href={`${API_URL}/api/export/pdf`} className="primary-btn" style={{ textDecoration: "none", display: "inline-block" }}>
           Export PDF
         </a>
-        <a href={`${API_URL}/api/export/docx`} className="send-btn" style={{ textDecoration: "none", display: "inline-block" }}>
+        <a href={`${API_URL}/api/export/docx`} className="primary-btn" style={{ textDecoration: "none", display: "inline-block" }}>
           Export Word
         </a>
       </div>
@@ -154,11 +154,11 @@ export default function AdminPanel({ token, setToken }) {
             className="text-input"
           />
         ))}
-        <button onClick={saveGrant} className="send-btn">
+        <button onClick={saveGrant} className="primary-btn">
           {editingGrant ? "Update Grant" : "Add Grant"}
         </button>
         {editingGrant && (
-          <button onClick={() => { setEditingGrant(null); setForm(emptyGrant); }} className="mode-btn">
+          <button onClick={() => { setEditingGrant(null); setForm(emptyGrant); }} className="primary-btn">
             Cancel Edit
           </button>
         )}
