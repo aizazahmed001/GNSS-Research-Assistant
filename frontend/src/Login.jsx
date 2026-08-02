@@ -11,7 +11,26 @@ export default function Login({ onLogin }) {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const googleBtnRef = useRef(null);
+
+  async function handleGoogleResponse(response) {
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: response.credential }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Google login failed");
+      onLogin(data.token, data.user);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   useEffect(() => {
     if (!window.google || !googleBtnRef.current) return;
@@ -27,24 +46,11 @@ export default function Login({ onLogin }) {
     });
   }, []);
 
-  async function handleGoogleResponse(response) {
-    try {
-      const res = await fetch(`${API_URL}/api/auth/google`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ credential: response.credential }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Google login failed");
-      onLogin(data.token, data.user);
-    } catch (err) {
-      setError(err.message);
-    }
-  }
-
   async function handleSubmit(e) {
     e.preventDefault();
+    if (isSubmitting) return;
     setError("");
+    setIsSubmitting(true);
     try {
       const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/signup";
       const res = await fetch(`${API_URL}${endpoint}`, {
@@ -57,6 +63,8 @@ export default function Login({ onLogin }) {
       onLogin(data.token, data.user);
     } catch (err) {
       setError(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -123,9 +131,9 @@ export default function Login({ onLogin }) {
 
           {error && <p className="auth-error">{error}</p>}
 
-          <button type="submit" className="auth-submit-btn">
-            <Satellite size={15} />
-            {mode === "login" ? "Log In" : "Create Account"}
+          <button type="submit" className="auth-submit-btn" disabled={isSubmitting}>
+            {isSubmitting ? <span className="loader-spinner" /> : <Satellite size={15} />}
+            {isSubmitting ? "Signing in..." : mode === "login" ? "Log In" : "Create Account"}
           </button>
         </form>
 

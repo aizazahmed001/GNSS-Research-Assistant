@@ -52,6 +52,7 @@ export default function App() {
   const idleTimerRef = useRef(null);
   const [copiedIndex, setCopiedIndex] = useState(null);
   const [sessionSearch, setSessionSearch] = useState("");
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // ── Auth helpers ────────────────────────────────────────────────────────
   function handleLogin(token, userData) {
@@ -87,7 +88,12 @@ export default function App() {
   }
 
   function confirmLogout() {
-    forceLogout();
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    window.setTimeout(() => {
+      forceLogout();
+      setIsLoggingOut(false);
+    }, 300);
   }
 
   function cancelLogout() {
@@ -316,14 +322,6 @@ export default function App() {
 
   return (
     <div className="page">
-      <div className="page-heading">
-        <img src={logo} alt="GNSS Research Assistant logo" className="page-heading-icon" />
-        <div>
-          <h1 className="page-title">GNSS Knowledge Bot</h1>
-          <p className="page-subtitle">AI assistant for GPS · GLONASS · Galileo · BeiDou · RTK · PPP</p>
-        </div>
-      </div>
-
       <div className="layout">
         {sidebarOpen && <div className="gs-sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
         <aside className={`gs-sidebar ${sidebarOpen ? "gs-sidebar-open" : "gs-sidebar-closed"}`}>
@@ -401,7 +399,7 @@ export default function App() {
     <span className="gs-header-title">GNSS Research AI</span>
   </div>
   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-    <span className="gs-header-sub">v0.1 · online</span>
+    
     <ThemeToggle />
   </div>
 </div>
@@ -590,8 +588,10 @@ export default function App() {
             <h3 className="modal-title">Log out?</h3>
             <p className="modal-text">You'll need to sign in again to access your chats.</p>
             <div className="modal-actions">
-              <button className="modal-btn modal-btn-cancel" onClick={cancelLogout}>Cancel</button>
-              <button className="modal-btn modal-btn-confirm" onClick={confirmLogout}>Log out</button>
+              <button className="modal-btn modal-btn-cancel" onClick={cancelLogout} disabled={isLoggingOut}>Cancel</button>
+              <button className="modal-btn modal-btn-confirm" onClick={confirmLogout} disabled={isLoggingOut}>
+                {isLoggingOut ? <span className="loader-spinner modal-loader-spinner" /> : "Log out"}
+              </button>
             </div>
           </div>
         </div>

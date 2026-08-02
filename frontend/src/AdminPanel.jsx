@@ -8,6 +8,7 @@ export default function AdminPanel({ token, setToken }) {
   const [grants, setGrants] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [editingGrant, setEditingGrant] = useState(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   
 
   const emptyGrant = {
@@ -25,7 +26,9 @@ export default function AdminPanel({ token, setToken }) {
   }, [token]);
 
   async function login() {
+    if (isLoggingIn) return;
     setLoginError("");
+    setIsLoggingIn(true);
     try {
       const res = await fetch(`${API_URL}/api/admin/login`, {
         method: "POST",
@@ -38,6 +41,8 @@ export default function AdminPanel({ token, setToken }) {
       sessionStorage.setItem("admin_token", data.token);
     } catch (err) {
       setLoginError(err.message);
+    } finally {
+      setIsLoggingIn(false);
     }
   }
 
@@ -118,8 +123,8 @@ export default function AdminPanel({ token, setToken }) {
           onKeyDown={(e) => e.key === "Enter" && login()}
           className="text-input"
         />
-        <button onClick={login} className="primary-btn" style={{ marginTop: 10 }}>
-          Log in
+        <button onClick={login} className="primary-btn" style={{ marginTop: 10 }} disabled={isLoggingIn}>
+          {isLoggingIn ? <span className="loader-spinner" /> : "Log in"}
         </button>
         {loginError && <p style={{ color: "#f66" }}>{loginError}</p>}
       </div>
