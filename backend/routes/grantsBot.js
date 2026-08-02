@@ -2,6 +2,82 @@ const express = require("express");
 const router = express.Router();
 const { pool } = require("../db");
 
+const learnedRegionAliases = new Map();
+const learnedKeywordAliases = new Map();
+
+function normalizeText(value = "") {
+  return value.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function rememberFromSearch(message, grants) {
+  const cleanMessage = normalizeText(message);
+  const keywordMatches = {
+    scholorship: "scholarship",
+    scholorships: "scholarships",
+    scholar: "scholarship",
+    phd: "phd",
+    fellowship: "fellowship",
+  };
+
+  for (const [bad, good] of Object.entries(keywordMatches)) {
+    if (cleanMessage.includes(bad)) {
+      learnedKeywordAliases.set(bad, good);
+    }
+  }
+
+  const regionAliases = [
+    ["europe", ["europe", "european union", "eu", "european commission", "esa"]],
+    ["eu", ["europe", "european union", "eu", "european commission", "esa"]],
+  ];
+
+  for (const [meaning, aliases] of regionAliases) {
+    if (cleanMessage.includes(meaning)) {
+      learnedRegionAliases.set(meaning, aliases);
+    }
+  }
+
+  for (const grant of grants) {
+    const countryNorm = normalizeText(grant.country);
+    if (!countryNorm) continue;
+    if (cleanMessage.includes("europe") && /europe|union|esa/.test(countryNorm)) {
+      learnedRegionAliases.set("europe", ["europe", "european union", "eu", "european commission", "esa"]);
+    }
+  }
+}
+
+function expandCountryFilters(country, learned = new Map()) {
+  if (!country) return [];
+  const normalizedCountry = normalizeText(country);
+  const regionSet = new Set([normalizedCountry]);
+  const aliases = learned.get(normalizedCountry) || [];
+  aliases.forEach((value) => regionSet.add(normalizeText(value)));
+
+  if (normalizedCountry.includes("europe")) {
+    ["europe", "european union", "eu", "european commission", "esa"].forEach((value) => regionSet.add(value));
+  }
+
+  return [...regionSet];
+}
+
+function inferKeywordVariants(keyword = "") {
+  const clean = normalizeText(keyword);
+  const variants = new Set([clean]);
+  const alias = learnedKeywordAliases.get(clean);
+  if (alias) variants.add(alias);
+
+  if (clean.includes("scholarship")) {
+    variants.add("scholarship");
+    variants.add("scholarships");
+  }
+
+  if (clean.includes("scholorship")) {
+    variants.add("scholarship");
+    variants.add("scholarships");
+  }
+
+  return [...variants].filter(Boolean);
+}
+
 module.exports = function (genAI) {
   const extractionModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   const answerModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -42,40 +118,80 @@ Question: "${message}"`;
       }
 
       // ── Step 2: run the extracted filters through real SQL (Postgres) ─────
-      let query = "SELECT * FROM grants WHERE 1=1";
-      const params = [];
-      let i = 1;
+      function buildGrantQuery(candidateFilters) {
+        let query = "SELECT * FROM grants WHERE 1=1";
+        const params = [];
+        let i = 1;
 
-      if (filters.country) {
-        query += ` AND country ILIKE $${i++}`;
-        params.push(`%${filters.country}%`);
-      }
-      if (filters.research_domain) {
-        query += ` AND research_domain ILIKE $${i++}`;
-        params.push(`%${filters.research_domain}%`);
-      }
-      if (filters.funding_type) {
-        query += ` AND funding_type ILIKE $${i++}`;
-        params.push(`%${filters.funding_type}%`);
-      }
-      if (filters.grant_category) {
-        query += ` AND grant_category ILIKE $${i++}`;
-        params.push(`%${filters.grant_category}%`);
-      }
-      if (filters.keyword) {
-        query += ` AND (title ILIKE $${i} OR description ILIKE $${i})`;
-        params.push(`%${filters.keyword}%`);
-        i++;
-      }
-      if (filters.deadline_before) {
-        query += ` AND deadline <= $${i++}`;
-        params.push(filters.deadline_before);
+        if (candidateFilters.country) {
+          const countryAliases = expandCountryFilters(candidateFilters.country, learnedRegionAliases);
+          const clauses = countryAliases.map((countryValue) => `country ILIKE $${i++}`);
+          query += ` AND (${clauses.join(" OR ")})`;
+          countryAliases.forEach((countryValue) => params.push(`%${countryValue}%`));
+        }
+        if (candidateFilters.research_domain) {
+          query += ` AND research_domain ILIKE $${i++}`;
+          params.push(`%${candidateFilters.research_domain}%`);
+        }
+        if (candidateFilters.funding_type) {
+          query += ` AND funding_type ILIKE $${i++}`;
+          params.push(`%${candidateFilters.funding_type}%`);
+        }
+        if (candidateFilters.grant_category) {
+          query += ` AND grant_category ILIKE $${i++}`;
+          params.push(`%${candidateFilters.grant_category}%`);
+        }
+        if (candidateFilters.keyword) {
+          const keywordVariants = inferKeywordVariants(candidateFilters.keyword);
+          const keywordClauses = [];
+
+          keywordVariants.forEach((variant) => {
+            keywordClauses.push(`(title ILIKE $${i} OR description ILIKE $${i})`);
+            params.push(`%${variant}%`);
+            i++;
+          });
+
+          query += ` AND (${keywordClauses.join(" OR ")})`;
+        }
+        if (candidateFilters.deadline_before) {
+          query += ` AND deadline <= $${i++}`;
+          params.push(candidateFilters.deadline_before);
+        }
+
+        query += " ORDER BY deadline ASC LIMIT 8";
+        return { query, params };
       }
 
-      query += " ORDER BY deadline ASC LIMIT 8";
+      const baseCandidate = {
+        ...filters,
+        keyword: filters.keyword || (message.toLowerCase().includes("scholar") ? "scholarship" : null),
+      };
 
-      const result = await pool.query(query, params);
-      const grants = result.rows;
+      const searchCandidates = [
+        baseCandidate,
+        { ...baseCandidate, country: null },
+        { ...baseCandidate, keyword: null },
+        { ...baseCandidate, deadline_before: null },
+        { ...baseCandidate, funding_type: null },
+        { ...baseCandidate, research_domain: null },
+        { ...baseCandidate, grant_category: null },
+        { ...baseCandidate, keyword: "gnss" },
+        { ...baseCandidate, country: "europe", keyword: "gnss" },
+        { ...baseCandidate, country: "europe", keyword: null },
+        { ...baseCandidate, country: "European Union", keyword: null },
+        { ...baseCandidate, country: "European Union", keyword: "GNSS" },
+      ];
+
+      let grants = [];
+      for (const candidate of searchCandidates) {
+        const { query, params } = buildGrantQuery(candidate);
+        const result = await pool.query(query, params);
+        if (result.rows.length > 0) {
+          grants = result.rows;
+          rememberFromSearch(message, grants);
+          break;
+        }
+      }
 
       // ── Step 3: phrase a natural answer using the real results ────────────
       if (grants.length === 0) {
